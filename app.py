@@ -13,15 +13,20 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Paths for CSVs
-BASE_PATH = Path("Outputs")
+# Paths for CSVs (deployment-safe)
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+BASE_PATH = ROOT / "Outputs"
+
 STATE_FOLDERS = {
     "CA": BASE_PATH / "CA",
     "NY": BASE_PATH / "NY",
     "MA": BASE_PATH / "MA",
-    "TX": BASE_PATH / "TX"
+    "TX": BASE_PATH / "TX",
 }
-CSV_NAME = "SEC_FORMD_2025_VC_INVESTOR_INTENT_FINAL.csv"
+
+CSV_NAME = "SEC_FORMD_2025_VC_INVESTOR_INTENT_FINAL.csv
 
 # Load CSV for selected state
 @st.cache_data
