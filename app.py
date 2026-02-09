@@ -26,7 +26,7 @@ STATE_FOLDERS = {
     "TX": BASE_PATH / "TX",
 }
 
-CSV_NAME = "SEC_FORMD_2025_VC_INVESTOR_INTENT_FINAL.csv
+CSV_NAME = "SEC_FORMD_2025_VC_INVESTOR_INTENT_FINAL.csv"
 
 # Load CSV for selected state
 @st.cache_data
