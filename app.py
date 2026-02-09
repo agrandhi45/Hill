@@ -14,7 +14,7 @@ st.set_page_config(
 )
 
 # Paths for CSVs
-BASE_PATH = Path("/Users/akhileshgrandhi/Desktop/Projects/Signal_Deck/IF Outputs")
+BASE_PATH = Path("Outputs")
 STATE_FOLDERS = {
     "CA": BASE_PATH / "CA",
     "NY": BASE_PATH / "NY",
