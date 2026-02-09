@@ -13,11 +13,18 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Font styling for hierarchy
+# Styling
 st.markdown("""
 <style>
 h1, h2, h3 { font-family: Inter, sans-serif; }
-.caption-text { font-size: 13px; color: #636e72; font-style: italic; }
+
+.caption-text {
+    font-size: 15px;
+    color: #ffffff;
+    font-style: italic;
+    opacity: 0.85;
+    margin-top: 6px;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -99,7 +106,6 @@ min_score = st.sidebar.slider(
     0.0, 1.0, 0.45, 0.05
 )
 
-# Apply filters
 filtered = df.copy()
 if sector_filter:
     filtered = filtered[filtered["Sector"].isin(sector_filter)]
@@ -118,8 +124,9 @@ c2.metric("Recent Capital", f"${filtered['Recent Capital Deployed'].sum():,.0f}"
 c3.metric("Median Intent Score", f"{filtered['Investor Intent Score'].median():.2f}")
 c4.metric("Unique Funds", filtered["Fund Name"].nunique())
 
-# Founder View
+# ---------------- Founder View ----------------
 if view == "Founder View":
+
     st.subheader("Ask SignalDeck")
     st.caption("SignalDeck prioritizes investors by deployment size, speed, and real-time intent.")
 
@@ -162,6 +169,7 @@ if view == "Founder View":
             temp = temp.head(5)
 
         st.success(f"SignalDeck suggests prioritizing {len(temp)} funds.")
+
         st.dataframe(
             temp[[
                 "Fund Name",
@@ -173,6 +181,24 @@ if view == "Founder View":
             use_container_width=True
         )
 
+        # Founder Insight
+        if not temp.empty:
+            top_fund = temp.iloc[0]
+
+            st.markdown(
+                f"""
+                <div class="caption-text">
+                🔍 <b>Founder Insight:</b><br>
+                <b>{top_fund['Fund Name']}</b> stands out due to strong recent deployment 
+                (${top_fund['Recent Capital Deployed']:,.0f}) and high momentum.
+                <br><br>
+                💡 Prioritize outreach now — funds showing rapid capital movement typically 
+                respond faster and maintain active deal pipelines.
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
     fig = px.scatter(
         temp.head(50),
         x="Capital Velocity",
@@ -181,21 +207,19 @@ if view == "Founder View":
         color="Intent Bucket",
         hover_name="Fund Name",
         title="Active Funds Deployment",
-        color_discrete_map={
-            "🔥 Hot": "#ff6b6b",
-            "🟡 Warm": "#feca57",
-            "❄️ Cold": "#8395a7"
-        },
         template="plotly_white"
     )
+
     st.plotly_chart(fig, use_container_width=True)
+
     st.markdown(
-        "<div class='caption-text'>Velocity shows how quickly capital is moving into a fund relative to peers.</div>",
+        "<div class='caption-text'>Velocity shows how quickly capital is moving relative to peer funds.</div>",
         unsafe_allow_html=True
     )
 
-# Institutional View
+# ---------------- Institutional View ----------------
 elif view == "Institutional View":
+
     st.subheader("Market Structure & Capital Flow")
 
     fig = px.scatter(
@@ -206,39 +230,31 @@ elif view == "Institutional View":
         color="Intent Bucket",
         hover_name="Fund Name",
         title="Capital Deployment Map",
-        color_discrete_map={
-            "🔥 Hot": "#e74c3c",
-            "🟡 Warm": "#f1c40f",
-            "❄️ Cold": "#95a5a6"
-        },
         template="plotly_white"
     )
+
     st.plotly_chart(fig, use_container_width=True)
+
+    # Institutional Insight
+    top_20_pct = int(0.2 * len(filtered))
+    capital_top_20 = (
+        filtered.sort_values("Recent Capital Deployed", ascending=False)
+        .head(top_20_pct)["Recent Capital Deployed"].sum()
+    )
+    capital_share_20 = capital_top_20 / filtered["Recent Capital Deployed"].sum()
+
     st.markdown(
-        "<div class='caption-text'>Shows how capital speed and size differ across hot, warm, and cold investors.</div>",
+        f"""
+        <div class="caption-text">
+        📊 <b>Market Insight:</b><br>
+        Top 20% of funds deploy <b>{capital_share_20:.0%}</b> of recent capital.
+        Capital concentration indicates momentum clustering among leading managers.
+        </div>
+        """,
         unsafe_allow_html=True
     )
 
-    sorted_cap = filtered.sort_values("Recent Capital Deployed", ascending=False)["Recent Capital Deployed"]
-    cum_cap = sorted_cap.cumsum() / sorted_cap.sum()
-
-    fig_gini = go.Figure()
-    fig_gini.add_trace(go.Scatter(y=cum_cap, fill="tozeroy", name="Capital Share"))
-    fig_gini.add_trace(go.Scatter(
-        y=np.linspace(0, 1, len(cum_cap)),
-        line=dict(dash="dash"),
-        name="Equality Line"
-    ))
-    fig_gini.update_layout(
-        title="Capital Concentration Curve",
-        template="plotly_white"
-    )
-    st.plotly_chart(fig_gini, use_container_width=True)
-    st.markdown(
-        "<div class='caption-text'>Reveals how much deployment is concentrated among the most active funds.</div>",
-        unsafe_allow_html=True
-    )
-
+    # GP Analysis
     gp_df = filtered.groupby("GP Name", as_index=False).agg(
         capital=("Recent Capital Deployed", "sum"),
         intent=("Investor Intent Score", "mean"),
@@ -254,39 +270,43 @@ elif view == "Institutional View":
         title="GP Influence & Deployment Power",
         template="plotly_white"
     )
-    st.plotly_chart(fig_gp, use_container_width=True)
-    st.markdown(
-        "<div class='caption-text'>Identifies individual GPs driving capital allocation decisions.</div>",
-        unsafe_allow_html=True
-    )
 
-# Advanced Market Analytics
+    st.plotly_chart(fig_gp, use_container_width=True)
+
+    if not gp_df.empty:
+        top_gp = gp_df.sort_values("capital", ascending=False).iloc[0]
+
+        st.markdown(
+            f"""
+            <div class="caption-text">
+            🧠 <b>GP Signal:</b><br>
+            <b>{top_gp['GP Name']}</b> currently drives the highest deployment volume
+            while maintaining strong intent and velocity.
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+# ---------------- Advanced Analytics ----------------
 else:
+
     st.subheader("Advanced Market Analytics")
     st.caption("Deep diagnostics on timing, momentum, and investor behavior.")
 
-    x_med = filtered["Days Since Filing"].median()
-    y_med = filtered["Fund Momentum"].median()
-
-    fig_quad = px.scatter(
+    fig = px.scatter(
         filtered,
         x="Days Since Filing",
         y="Fund Momentum",
         color="Intent Bucket",
         hover_name="Fund Name",
         title="Momentum vs Recency",
-        template="plotly_white",
-        color_discrete_map={
-            "🔥 Hot": "#ff6b6b",
-            "🟡 Warm": "#feca57",
-            "❄️ Cold": "#8395a7"
-        }
+        template="plotly_white"
     )
-    fig_quad.add_vline(x=x_med, line_dash="dash")
-    fig_quad.add_hline(y=y_med, line_dash="dash")
-    st.plotly_chart(fig_quad, use_container_width=True)
+
+    st.plotly_chart(fig, use_container_width=True)
+
     st.markdown(
-        "<div class='caption-text'>Cold funds cluster where momentum and recency are both low.</div>",
+        "<div class='caption-text'>Cold funds cluster where both recency and momentum are weak.</div>",
         unsafe_allow_html=True
     )
 
@@ -302,60 +322,21 @@ else:
         x=intent_time["Filing Date"],
         y=intent_time["Recent Capital Deployed"]
     )
-    fig_time.update_layout(
-        title="Investor Deployment Over Time",
-        template="plotly_white"
-    )
+
     st.plotly_chart(fig_time, use_container_width=True)
-    st.markdown(
-        "<div class='caption-text'>Tracks market-wide deployment cycles across all intent levels.</div>",
-        unsafe_allow_html=True
-    )
 
-    fig_momentum = px.scatter(
-        filtered,
-        x="Total Fund Size",
-        y="Fund Momentum",
-        size="Investor Count",
-        color="Capital Velocity",
-        log_x=True,
-        hover_name="Fund Name",
-        title="Fund Momentum vs Fund Size",
-        template="plotly_white"
-    )
-    st.plotly_chart(fig_momentum, use_container_width=True)
     st.markdown(
-        "<div class='caption-text'>Separates large but slow funds from smaller, faster allocators.</div>",
-        unsafe_allow_html=True
-    )
-
-    top_funds = filtered.sort_values("Investor Intent Score", ascending=False).head(20)
-    fig_vel_time = px.scatter(
-        top_funds,
-        x="Filing Date",
-        y="Capital Velocity",
-        size="Total Fund Size",
-        color="Investor Intent Score",
-        hover_name="Fund Name",
-        title="Capital Velocity vs Time (Top Funds)",
-        template="plotly_white"
-    )
-    st.plotly_chart(fig_vel_time, use_container_width=True)
-    st.markdown(
-        "<div class='caption-text'>Shows whether high-intent funds are speeding up or cooling off.</div>",
+        "<div class='caption-text'>Tracks deployment cycles across the entire investor market.</div>",
         unsafe_allow_html=True
     )
 
     top_10_pct = int(0.1 * len(filtered))
     capital_top_10 = (
-        filtered
-        .sort_values("Recent Capital Deployed", ascending=False)
-        .head(top_10_pct)["Recent Capital Deployed"]
-        .sum()
+        filtered.sort_values("Recent Capital Deployed", ascending=False)
+        .head(top_10_pct)["Recent Capital Deployed"].sum()
     )
+
     total_cap = filtered["Recent Capital Deployed"].sum()
     capital_share = capital_top_10 / total_cap if total_cap > 0 else 0
 
     st.metric("Top 10% Funds Deploy", f"{capital_share:.0%}")
-    fast_count = (filtered["Capital Velocity"] >= filtered["Capital Velocity"].quantile(0.9)).sum()
-    st.metric("Top 10% Fast-Moving Funds", f"{fast_count} funds")
