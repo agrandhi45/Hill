@@ -14,14 +14,14 @@ st.set_page_config(
 )
 
 # Paths for CSVs
-BASE_PATH = Path("/Users/akhileshgrandhi/Desktop/IF Outputs")
+BASE_PATH = Path("/Users/akhileshgrandhi/Desktop/Projects/Signal_Deck/IF Outputs")
 STATE_FOLDERS = {
     "CA": BASE_PATH / "CA",
     "NY": BASE_PATH / "NY",
     "MA": BASE_PATH / "MA",
     "TX": BASE_PATH / "TX"
 }
-CSV_NAME = "SEC_FORMD_2025_CA_VC_INVESTOR_INTENT_FINAL.csv"
+CSV_NAME = "SEC_FORMD_2025_VC_INVESTOR_INTENT_FINAL.csv"
 
 # Load CSV for selected state
 @st.cache_data
